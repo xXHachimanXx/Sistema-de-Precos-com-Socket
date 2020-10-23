@@ -1,5 +1,7 @@
 import socket
 
+serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 class Fuel:
     def __init__(self, fuelType, fuelPrice):
         self.fuelType = fuelType
@@ -13,22 +15,28 @@ class GasStation:
         self.fuels = fuels
     
 
-def upServer():    
-    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def initServer(port):        
+    global serversocket
     
     # pegar nome da maquina local
-    host = socket.gethostname()
-    port = 3333
+    host = socket.gethostname()    
 
     serversocket.bind((host, port))
 
 
-def main():
-    listOfGasStations = []
+def main():           
+    print("Bem-vindo ao servidor do Sistema de Preços!")
+    print("Digite a porta a ser escutada pelo servidor para inicializá-lo: ")
+    port = input()
     
-    with open('gas_stations.txt', 'r') as gasStations:
-        for gasStation in gasStations:
-            gasStationDetais = gasStation.split(' ')
+    initServer(port)
+
+    while True:    
+        listOfGasStations = []
+    
+        with open('gas_stations.txt', 'r') as gasStations:
+            for gasStation in gasStations:
+                gasStationDetais = gasStation.split(' ')
             
             
         
