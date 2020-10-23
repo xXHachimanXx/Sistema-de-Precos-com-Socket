@@ -27,11 +27,12 @@ class GasStation:
             str += (fuel + " " + self.lat + " " + self.long + "\n")
             
         return str
-        
-def saveOnDatabase(self, msg):
-    with open('gas-stations.txt', 'a', encoding='utf-8') as database:        
-        for fuel in self.fuels:
-            database.write(msg)
+    
+    @staticmethod    
+    def saveOnDatabase(self, msg):
+        with open('gas-stations.txt', 'a', encoding='utf-8') as database:        
+            for fuel in self.fuels:
+                database.write(msg)
 
 def initServer(port):
     global serversocket
@@ -40,12 +41,13 @@ def initServer(port):
     host = socket.gethostname()    
 
     serversocket.bind((host, port))
-        
+    serversocket.listen(5)
     # carregar dados na memória
-    with open('gas_stations.txt', 'r') as gasStations:
+    with open('../database/gas_stations.txt', 'r') as gasStations:
         for gasStation in gasStations:
             gasStationDetais = gasStation.split(' ')
             insertIntoListOfGasStations(gasStationDetais)
+    
     
 def searchGasStation(lat, long):    
     sgIndex = None
@@ -78,25 +80,51 @@ def insertIntoListOfGasStations(gasStationDetais):
     else:
         listOfGasStations[objGasStationIndex].insertFuel(newFuel)
     
-    
+def checkInput(msg):    
+    return (
+        len(msg) == 6 and
+        (msg[0] == 'D' or msg[0] == 'P')
+    )
 
 def main():
     print("Bem-vindo ao servidor do Sistema de Preços!")
-    print("Digite a porta a ser escutada pelo servidor para inicializá-lo: ")
-    port = input()
+    port = int(input("Digite a porta a ser escutada pelo servidor para inicializá-lo: "))
     
     initServer(port)
+    # print("hello")
 
     while True:
         global listOfGasStations
+        global serversocket
         
-        msg, client = serversocket.recvfrom(1024)
-        msg = msg.decode('utf-8')
+        client, address = serversocket.accept()
+        
+        msg = client.recv(1024).decode('utf-8')        
         print(client, msg)
     
         msg = msg.split(' ')
         
+        if(checkInput(msg)):
+            
+            # cadastro
+            if msg[0] == 'D':
+                insertIntoListOfGasStations(msg)
+                GasStation.saveOnDatabase(msg)
+            
+            # pesquisa
+            if msg[0] == 'P':
+                print('pesquisei')
+                serversocket.sendto("pesquisei".encode('utf-8'), client)
+        else:
+            print('Erro: Entrada de dados inválida!')
+            serversocket.sendto(
+                "Server - Erro: Entrada de dados inválida!".encode("utf-8"),
+                client
+            )
+        
         
         
     serversocket.close()
+    
+main()
 
