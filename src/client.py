@@ -5,32 +5,38 @@ import ipaddress
 udpConnection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Método para testar conexão
-def testConnection(destiny):
+def testIp(destiny):    
     ip = destiny[0]
-    port = destiny[1]
 
-    # testar conexao
-    res = udpConnection.connect_ex((ip, port))
-    udpConnection.close()
-
-    return len(input) == 2 and res == 0
+    res = True
+    # testar ip
+    try:
+        ip = ipaddress.ip_address(ip)        
+    except ValueError:
+        res = False
+    
+    return res    
 
 # Ler dados do usuário
 def readClientData():
     
     while True:
-        destiny = input().split(" ")
+        destiny = input("Informe o ip e a porta da seguinte forma: <ip> <porta>\n").split(' ')
+        
+        if destiny[0] == "localhost":
+            hostname = socket.gethostname()
+            destiny[0] = socket.gethostbyname(hostname)
 
-        if testConnection(destiny):
+        if len(destiny) == 2 and testIp(destiny):
             break
-        else:
+        else:      
+            print(destiny)      
             print("Ip ou porta inválida! Tente de novo: ")
 
     return destiny
 
 
 def main():
-    print("Informe o ip e a porta da seguinte forma: <ip> <porta>\n")
     destiny = readClientData()
     
     host = str(destiny[0])
@@ -49,27 +55,17 @@ def main():
         if flag == "E":
             flagToExit = True
             print('Obrigado e até logo :)')
-            pass
+            continue
         
         msg = flag.encode("utf-8")
         
-        udpConnection.sendto(msg, destiny)
+        udpConnection.sendto(msg, (host, port))
         
         udpConnection.settimeout(5.0)
         msg, client = udpConnection.recvfrom(1024)
         
         if msg:
             print(msg.decode('utf-8'))            
-        
-    
-        
-    
-    
-    
-    udpConnection.connect((host, port))
-    
-    # limitar mensagens para ate' 1024 bytes
-    msg = udpConnection.recv(1024)
-    
-    udpConnection.close() # fechar conexao
-    print(msg.decode('ascii')) # printar mensagem decodificada
+                    
+
+main()
