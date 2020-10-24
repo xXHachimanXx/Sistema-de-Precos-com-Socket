@@ -30,17 +30,16 @@ class GasStation:
         return str
     
     @staticmethod    
-    def saveOnDatabase(self, msg):
+    def saveOnDatabase(msg):
         global idDataMsg
-        
-        with open('gas-stations.txt', 'a', encoding='utf-8') as database:            
+        with open('../database/gas_stations.txt', 'a', encoding='utf-8') as database:            
             database.write(
                 "D " + 
-                idDataMsg + " " +
-                msg[1] + " " +
-                msg[2] + " " +
-                msg[3] + " " +
-                msg[4]
+                str(idDataMsg) + " " +
+                str(msg[1]) + " " +
+                str(msg[2]) + " " +
+                str(msg[3]) + " " +
+                str(msg[4])
             )
             
         idDataMsg += 1
@@ -59,6 +58,8 @@ def initServer(port):
             gasStationDetais = gasStation.split(' ')            
             gasStationDetais.pop(1) # Remover id da mensagem 
             insertIntoListOfGasStations(gasStationDetais)
+    
+    print("Servidor operante!")
     
     
 def searchGasStation(lat, long):    
@@ -111,7 +112,6 @@ def main():
         client, address = serversocket.accept()
         
         msg = client.recv(1024).decode('utf-8')        
-        print(client, msg)
     
         msg = msg.split(' ')
         

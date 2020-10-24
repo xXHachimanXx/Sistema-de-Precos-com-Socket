@@ -7,21 +7,17 @@ udpConnection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # Método para testar conexão
 def testIp(destiny):    
     ip = destiny[0]
-
-    res = True
     # testar ip
-    try:
-        ip = ipaddress.ip_address(ip)        
-    except ValueError:
-        res = False
     
-    return res    
-
+    ip = ipaddress.ip_address(ip)                
+    
+    return (ip != None)
+    
 # Ler dados do usuário
 def readClientData():
     
     while True:
-        destiny = input("Informe o ip e a porta da seguinte forma: <ip> <porta>\n").split(' ')
+        destiny = input("Informe o ip e a porta da seguinte forma: <ip> <porta>\n").split(' ')        
         
         if destiny[0] == "localhost":
             hostname = socket.gethostname()
@@ -37,30 +33,38 @@ def readClientData():
 
 
 def main():
+    global udpConnection
+    
     destiny = readClientData()
     
-    host = str(destiny[0])
+    host = destiny[0]
     port = int(destiny[1])
     
-    flagToExit = False
-    print("Entre com um código: ")
-    print("Cadastrar um posto - D <tipo-combustível> <preço> <latitude> <longitude>")
-    print("Pesquisar um posto - P <tipo-combustível> <preço> <latitude> <longitude>")
-    print("Sair da aplicação - E")
+    udpConnection.connect((host, port))
+    
+    flagToExit = False        
     
     while not flagToExit:
-        flag = input()
+        print("Entre com um código: ")
+        print("Cadastrar um posto - D <tipo-combustível> <preço> <latitude> <longitude>")
+        print("Pesquisar um posto - P <tipo-combustível> <preço> <latitude> <longitude>")
+        print("Sair da aplicação - E")
+        try:
+            msg = input()
+        except EOFError:
+            print(msg)            
         
         # testar se e' uma flag de saida
-        if flag == "E":
+        if msg == "E":
             flagToExit = True
             print('Obrigado e até logo :)')
             continue
         
-        msg = flag.encode("utf-8")
+        msg = msg.encode('UTF-8')
+        #print((host, port))        
         udpConnection.sendto(msg, (host, port))
         
-        udpConnection.settimeout(3.0)
+        udpConnection.settimeout(5.0)
         msg, client = udpConnection.recvfrom(1024)
         
         if msg:
