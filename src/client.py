@@ -44,9 +44,9 @@ def main():
     
     flagToExit = False
     print("Entre com um código: ")
-    print("D - Cadastrar um posto")        
-    print("P - Pesquisar um posto")            
-    print("E - Sair da aplicação")
+    print("Cadastrar um posto - D <tipo-combustível> <preço> <latitude> <longitude>")
+    print("Pesquisar um posto - P <tipo-combustível> <preço> <latitude> <longitude>")
+    print("Sair da aplicação - E")
     
     while not flagToExit:
         flag = input()
@@ -58,14 +58,13 @@ def main():
             continue
         
         msg = flag.encode("utf-8")
-        
         udpConnection.sendto(msg, (host, port))
         
-        udpConnection.settimeout(5.0)
+        udpConnection.settimeout(3.0)
         msg, client = udpConnection.recvfrom(1024)
         
         if msg:
-            print(msg.decode('utf-8'))            
+            print(msg.decode('utf-8'))
                     
 
 main()

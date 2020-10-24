@@ -2,6 +2,7 @@ import socket
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 listOfGasStations = []
+idDataMsg = 0
 
 class Fuel:
     def __init__(self, fuelType, fuelPrice):
@@ -30,9 +31,19 @@ class GasStation:
     
     @staticmethod    
     def saveOnDatabase(self, msg):
-        with open('gas-stations.txt', 'a', encoding='utf-8') as database:        
-            for fuel in self.fuels:
-                database.write(msg)
+        global idDataMsg
+        
+        with open('gas-stations.txt', 'a', encoding='utf-8') as database:            
+            database.write(
+                "D " + 
+                idDataMsg + " " +
+                msg[1] + " " +
+                msg[2] + " " +
+                msg[3] + " " +
+                msg[4]
+            )
+            
+        idDataMsg += 1
 
 def initServer(port):
     global serversocket
@@ -45,7 +56,8 @@ def initServer(port):
     # carregar dados na memória
     with open('../database/gas_stations.txt', 'r') as gasStations:
         for gasStation in gasStations:
-            gasStationDetais = gasStation.split(' ')
+            gasStationDetais = gasStation.split(' ')            
+            gasStationDetais.pop(1) # Remover id da mensagem 
             insertIntoListOfGasStations(gasStationDetais)
     
     
@@ -60,20 +72,20 @@ def searchGasStation(lat, long):
 def insertIntoListOfGasStations(gasStationDetais):        
     
     objGasStationIndex = searchGasStation(
-        lat=gasStationDetais[4],
-        long=gasStationDetais[5]
+        lat=gasStationDetais[3],
+        long=gasStationDetais[4]
     )
     
     # combustivel a ser catalogado
-    newFuel = Fuel(fuelType=gasStationDetais[2], 
-                   fuelPrice=gasStationDetais[3])
+    newFuel = Fuel(fuelType=gasStationDetais[1], 
+                   fuelPrice=gasStationDetais[2])
     
     if objGasStationIndex == None:
         # Criar novo posto caso nao exista
         objGasStation = GasStation(
             [newFuel],
-            lat=gasStationDetais[4],
-            long=gasStationDetais[5]
+            lat=gasStationDetais[3],
+            long=gasStationDetais[4]
         )
         # inserir na lista
         listOfGasStations.append(objGasStation)
@@ -82,7 +94,7 @@ def insertIntoListOfGasStations(gasStationDetais):
     
 def checkInput(msg):    
     return (
-        len(msg) == 6 and
+        len(msg) == 5 and
         (msg[0] == 'D' or msg[0] == 'P')
     )
 
@@ -91,7 +103,6 @@ def main():
     port = int(input("Digite a porta a ser escutada pelo servidor para inicializá-lo: "))
     
     initServer(port)
-    # print("hello")
 
     while True:
         global listOfGasStations
@@ -110,20 +121,34 @@ def main():
             if msg[0] == 'D':
                 insertIntoListOfGasStations(msg)
                 GasStation.saveOnDatabase(msg)
+                print(
+                    "Client: " + client + " " +
+                    "Tipo de mensagem: " + msg[0] + " "
+                    "Status: Sucesso"                    
+                )
+                serversocket.sendto("Cadastro realizado!".encode('utf-8'), client)
             
             # pesquisa
             if msg[0] == 'P':
-                print('pesquisei')
-                serversocket.sendto("pesquisei".encode('utf-8'), client)
+                print(
+                    "Client: " + client + " " +
+                    "Tipo de mensagem: " + msg[0] + " "
+                    "Status: Sucesso"
+                )
+                serversocket.sendto("Pesquisa realizada".encode('utf-8'), client)
         else:
-            print('Erro: Entrada de dados inválida!')
+            print(
+                    "Client: " + client + " " +
+                    "Tipo de mensagem: " + msg[0] + " "
+                    "Status: Fracasso" +
+                    "Mensagem: " + ' '.join([str(elem) for elem in msg])
+                )
             serversocket.sendto(
                 "Server - Erro: Entrada de dados inválida!".encode("utf-8"),
                 client
             )
-        
-        
-        
+            
+    # Fechar conexao
     serversocket.close()
     
 main()
