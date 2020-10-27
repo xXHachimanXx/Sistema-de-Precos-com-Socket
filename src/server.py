@@ -1,7 +1,7 @@
 import socket
 from math import sqrt
 
-serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+serversocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 listOfGasStations = []
 idDataMsg = 0
 
@@ -49,8 +49,8 @@ class GasStation:
     @staticmethod
     def getLowerGasPrice(fuelType, searchRadius, lat, long):
         lowerGasPrice = -1
-        lowerGasPriceObject = object()
-        stationOfLowerlowerGasPriceObject = object()
+        lowerGasPriceObject = None
+        stationOfLowerlowerGasPriceObject = None
         
         success = False  
         searchRadius = float(searchRadius)      
@@ -62,6 +62,10 @@ class GasStation:
                 
             listOfGasStations
         ))
+        
+        print("listaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        print(newListOfGasStations)
+          
         
         if len(newListOfGasStations) == 0:
             response = "Nenhum posto dentro do raio requisitado."
@@ -76,14 +80,25 @@ class GasStation:
                         lowerGasPriceObject = gsFuelRequired
                         stationOfLowerlowerGasPriceObject = gs                        
                         
-            success = True            
-            response = "Tipo de combustível: " + fuelType + "\nRaio de busca: " + str(searchRadius) +"\nCoordenadas do centro: " + str((lat,long)) +"\nMenor preco: " + str(lowerGasPrice) + "\nCoordenadas do posto: " + str((stationOfLowerlowerGasPriceObject.lat, stationOfLowerlowerGasPriceObject.long))
+            success = True   
+                    
+            if stationOfLowerlowerGasPriceObject == None:
+                response = "Não há nenhum posto com este tipo de combustível."
+            else:
+                response = "Tipo de combustível: " + fuelType + \
+                       "\nRaio de busca: " + str(searchRadius) + \
+                       "\nCoordenadas do centro: " + str((lat,long)) + \
+                       "\nMenor preco: " + str(lowerGasPrice) + \
+                       "\nCoordenadas do posto: " + str((stationOfLowerlowerGasPriceObject.lat, stationOfLowerlowerGasPriceObject.long))
             
             
         return (success, response)
         
 def pointsDistance(xA, xB, yA, yB):
-    return sqrt((float(xA) - float(xB))**2) + ((float(yA)-float(yB))**2)
+    absxAB = abs( float(xA) - float(xB) ) ** 2
+    absyAB = abs( float(yA) - float(yB) ) ** 2
+    return sqrt( absxAB + absyAB )
+            
     
 def initServer(port):
     """Método para inicializar o servidor e carrgar dados da database.        
@@ -100,7 +115,6 @@ def initServer(port):
     
     # conectar e setar tamanho do backlog
     serversocket.bind((host, port))
-    serversocket.listen(5)
     
     # carregar dados na memória
     with open('../database/gas_stations.txt', 'r') as gasStations:
@@ -109,7 +123,7 @@ def initServer(port):
             gasStationDetais.pop(1) # Remover id da mensagem 
             insertIntoListOfGasStations(gasStationDetais)
     
-    print("Servidor operante!")
+    print("Servidor operante!\n")
     
     
 def searchGasStation(lat, long):    
@@ -117,7 +131,7 @@ def searchGasStation(lat, long):
 
         Parameters
         ----------
-        lat : double
+        lat: double
             Latitude do posto.
         long: double
             Longitude do posto.
@@ -191,7 +205,7 @@ def checkInput(msg):
         (msg[0] == 'D' or msg[0] == 'P')
     )
 
-def consoleWarning(msg, success, client):
+def consoleWarning(msg, success, address):
     """Método para mostrar a situação da operação.
 
         Parameters
@@ -203,12 +217,15 @@ def consoleWarning(msg, success, client):
         client : socket
             Objeto que representa o client da operação.
     """
-    flag = ("Sucesso" if success else "Fracasso")
+    successFlag = "Sucesso"
     
+    if not success:        
+        successFlag = "Fracasso"
+        
     print(
-            "Client: " + client.__str__ + " " +
-            "Tipo de mensagem: " + msg[0] + " "
-            "Status: " + flag
+        "Client: " + address[0] + ":" + str(address[1]) +
+        "\nTipo de mensagem: " + msg[0] +
+        "\nStatus: " + successFlag
     )
     
 
@@ -223,17 +240,14 @@ def main():
         global serversocket
         success = False
         
-        client, address = serversocket.accept()
-        
-        msg = client.recv(1024).decode('utf-8')
-    
-        msg = msg.split(' ')
+        msg, client = serversocket.recvfrom(1024)        
+        msg = msg.decode('utf-8').split(' ')
         
         if(checkInput(msg)):
             
             # cadastro
             if msg[0] == 'D':
-                print("Mensagem recebida!")
+                print("Mensagem recebida!\n")
                 insertIntoListOfGasStations(msg)
                 GasStation.saveOnDatabase(msg)
                 success = True
@@ -242,15 +256,14 @@ def main():
             
             # pesquisa
             if msg[0] == 'P':
-                print("Mensagem recebida!")
+                print("Mensagem recebida!\n")
                 success, resp = GasStation.getLowerGasPrice(
                     msg[1], msg[2], msg[3], msg[4]
                 )
                 consoleWarning(msg, success, client)
                 
                 serversocket.sendto(resp.encode('utf-8'), client)
-        else:
-
+        else:            
             consoleWarning(msg, success, client)
             serversocket.sendto(
                 "Server - Erro: Entrada de dados inválida!".encode("utf-8"),

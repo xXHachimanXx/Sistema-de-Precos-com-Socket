@@ -2,7 +2,7 @@ import socket
 import ipaddress
 
 # criar um objeto socket
-udpConnection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+udpConnection = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
 # Método para testar conexão
 def testIp(destiny):    
