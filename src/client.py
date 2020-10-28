@@ -45,10 +45,12 @@ def main():
     flagToExit = False        
     
     while not flagToExit:
-        print("Entre com um código: ")
+        
+        print("\nEntre com um código: ")
         print("Cadastrar um posto - D <tipo-combustível> <preço> <latitude> <longitude>")
-        print("Pesquisar um posto - P <tipo-combustível> <preço> <latitude> <longitude>")
+        print("Pesquisar um posto - P <tipo-combustível> <raio-de-busca> <latitude> <longitude>")
         print("Sair da aplicação - E \n")
+        
         try:
             msg = input()
         except EOFError:

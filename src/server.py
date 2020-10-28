@@ -1,5 +1,5 @@
 import socket
-from math import sqrt
+from math import sqrt, inf
 
 serversocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 listOfGasStations = []
@@ -8,10 +8,10 @@ idDataMsg = 0
 class Fuel:
     def __init__(self, fuelType, fuelPrice):
         self.fuelType = fuelType
-        self.fuelPrice = int(fuelPrice * 1000)
+        self.fuelPrice = int(fuelPrice)
 
     def __str__(self):
-        return (self.fuelType + ' ' + self.fuelPrice)
+        return (self.fuelType + ' ' + str(self.fuelPrice))
 
 
 class GasStation:
@@ -27,7 +27,7 @@ class GasStation:
         str = ""
         
         for fuel in self.fuels:
-            str += (fuel + " " + self.lat + " " + self.long + "\n")
+            str += (fuel + " " + str(self.lat) + " " + str(self.long) + "\n")
             
         return str
     
@@ -48,7 +48,7 @@ class GasStation:
     
     @staticmethod
     def getLowerGasPrice(fuelType, searchRadius, lat, long):
-        lowerGasPrice = -1
+        lowerGasPrice = 10000000
         lowerGasPriceObject = None
         stationOfLowerlowerGasPriceObject = None
         
@@ -61,11 +61,7 @@ class GasStation:
                 pointsDistance(elem.lat, lat, elem.long, long) <= searchRadius,
                 
             listOfGasStations
-        ))
-        
-        print("listaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-        print(newListOfGasStations)
-          
+        ))        
         
         if len(newListOfGasStations) == 0:
             response = "Nenhum posto dentro do raio requisitado."
@@ -73,24 +69,28 @@ class GasStation:
         else:        
             # Iterar na lista de combustíveis de cada posto em busca
             # do menor preço e retorná-lo
-            for gs in newListOfGasStations:            
-                for gsFuelRequired in gs.fuels:
-                    if gsFuelRequired.fuelType == fuelType and gsFuelRequired.fuelPrice < lowerGasPrice:
-                        lowerGasPrice = gsFuelRequired.price
-                        lowerGasPriceObject = gsFuelRequired
-                        stationOfLowerlowerGasPriceObject = gs                        
-                        
-            success = True   
-                    
-            if stationOfLowerlowerGasPriceObject == None:
-                response = "Não há nenhum posto com este tipo de combustível."
-            else:
-                response = "Tipo de combustível: " + fuelType + \
-                       "\nRaio de busca: " + str(searchRadius) + \
-                       "\nCoordenadas do centro: " + str((lat,long)) + \
-                       "\nMenor preco: " + str(lowerGasPrice) + \
-                       "\nCoordenadas do posto: " + str((stationOfLowerlowerGasPriceObject.lat, stationOfLowerlowerGasPriceObject.long))
+            for gs in newListOfGasStations:
+                for gsFuelRequired in gs.fuels:                    
+                    if gsFuelRequired.fuelType == fuelType:
+                        #print((gsFuelRequired.fuelPrice, lowerGasPrice))
+                        if gsFuelRequired.fuelPrice < lowerGasPrice:
+                            lowerGasPrice = gsFuelRequired.fuelPrice
+                            lowerGasPriceObject = gsFuelRequired
+                            stationOfLowerlowerGasPriceObject = gs
+                        break
+                                            
+            success = True            
             
+            if stationOfLowerlowerGasPriceObject == None:
+                response = "\nNão há nenhum posto com este tipo de combustível."
+            else:
+                response = "\nResposta da busca: " + \
+                       "\n - Tipo de combustível: " + fuelType + \
+                       "\n - Raio de busca: " + str(searchRadius) + \
+                       "\n - Coordenadas do centro: " + str((lat,long)) + \
+                       "\n - Menor preco: " + str(lowerGasPrice) + \
+                       "\n - Coordenadas do posto: " + str((stationOfLowerlowerGasPriceObject.lat, stationOfLowerlowerGasPriceObject.long))
+
             
         return (success, response)
         
@@ -119,8 +119,10 @@ def initServer(port):
     # carregar dados na memória
     with open('../database/gas_stations.txt', 'r') as gasStations:
         for gasStation in gasStations:
-            gasStationDetais = gasStation.split(' ')            
-            gasStationDetais.pop(1) # Remover id da mensagem 
+            gasStationDetais = gasStation.replace('\n', '').split(' ')
+            
+            gasStationDetais.pop(1) # Remover id da mensagem            
+            
             insertIntoListOfGasStations(gasStationDetais)
     
     print("Servidor operante!\n")
@@ -168,9 +170,15 @@ def insertIntoListOfGasStations(gasStationDetais):
         long=gasStationDetais[4]
     )
     
+    # print("Objetoooooooo")
+    # print((gasStationDetais[1], gasStationDetais[2]))
+    
     # combustivel a ser catalogado
-    newFuel = Fuel(fuelType=gasStationDetais[1], 
-                   fuelPrice=gasStationDetais[2])
+    newFuel = Fuel(gasStationDetais[1], 
+                   gasStationDetais[2])
+        
+    # print("Objetoooooooo")
+    # print(newFuel)
     
     if objGasStationIndex == None:
         
@@ -179,7 +187,7 @@ def insertIntoListOfGasStations(gasStationDetais):
             [newFuel],
             lat=gasStationDetais[3],
             long=gasStationDetais[4]
-        )
+        )            
         
         # inserir na lista
         listOfGasStations.append(objGasStation)
@@ -225,7 +233,7 @@ def consoleWarning(msg, success, address):
     print(
         "Client: " + address[0] + ":" + str(address[1]) +
         "\nTipo de mensagem: " + msg[0] +
-        "\nStatus: " + successFlag
+        "\nStatus: " + successFlag + "\n"        
     )
     
 
@@ -247,7 +255,7 @@ def main():
             
             # cadastro
             if msg[0] == 'D':
-                print("Mensagem recebida!\n")
+                print("Mensagem recebida!")
                 insertIntoListOfGasStations(msg)
                 GasStation.saveOnDatabase(msg)
                 success = True
@@ -256,7 +264,7 @@ def main():
             
             # pesquisa
             if msg[0] == 'P':
-                print("Mensagem recebida!\n")
+                print("Mensagem recebida!")
                 success, resp = GasStation.getLowerGasPrice(
                     msg[1], msg[2], msg[3], msg[4]
                 )
