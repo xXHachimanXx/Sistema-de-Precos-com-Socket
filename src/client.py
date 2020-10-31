@@ -7,8 +7,8 @@ udpConnection = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 # Método para testar conexão
 def testIp(destiny):    
     ip = destiny[0]
-    # testar ip
     
+    # testar ip    
     ip = ipaddress.ip_address(ip)                
     
     return (ip != None)
