@@ -72,5 +72,5 @@ def main():
         if msg:
             print(msg.decode('utf-8'))
                     
-
-main()
+if __name__ == "__main__":
+    main()
